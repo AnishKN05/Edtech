@@ -11,6 +11,7 @@ data = {
     'recommended_subject': [1, 2, 1, 1, 2]  # 1: Math, 2: Science
 }
 
+# Create DataFrame
 df = pd.DataFrame(data)
 
 # Feature and target variables
@@ -18,19 +19,21 @@ X = df[['age', 'interest_in_subject', 'previous_scores']]
 y = df['recommended_subject']
 
 # Train-test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=40)
 
-# Initialize and train model
-model = RandomForestClassifier()
+# Initialize and train the model
+model = RandomForestClassifier(random_state=42)
 model.fit(X_train, y_train)
 
 # Predict on test set
 y_pred = model.predict(X_test)
 
-# Accuracy
+# Accuracy score
 print(f'Accuracy: {accuracy_score(y_test, y_pred)}')
 
 # Recommend subject for a new student
-new_student = [[14, 2, 75]]  # Age, Interest in Science (2), Previous Score
+new_student = pd.DataFrame([[14, 0, 10]], columns=['age', 'interest_in_subject', 'previous_scores'])  # Include column names
 recommended_subject = model.predict(new_student)
+
+# Output recommended subject
 print(f'Recommended Subject: {"Math" if recommended_subject == 1 else "Science"}')
