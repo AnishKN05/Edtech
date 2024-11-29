@@ -1,9 +1,17 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import CORS
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-# Sample Data
+# Initialize Flask app
+app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app)  # This allows all domains to access the API
+
+# Sample data for training
 data = {
     'age': [12, 15, 14, 13, 16],
     'interest_in_subject': [1, 2, 1, 1, 2],
@@ -21,19 +29,44 @@ y = df['recommended_subject']
 # Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=40)
 
-# Initialize and train the model
+# Initialize and train the Random Forest model
 model = RandomForestClassifier(random_state=42)
 model.fit(X_train, y_train)
 
-# Predict on test set
-y_pred = model.predict(X_test)
+# Define Flask endpoint
+@app.route('/api/recommend', methods=['POST'])
+def recommend_subject():
+    """
+    Endpoint to recommend a subject based on input data (age, interest, score).
+    """
+    try:
+        # Get JSON data from the request
+        input_data = request.json
 
-# Accuracy score
-print(f'Accuracy: {accuracy_score(y_test, y_pred)}')
+        # Validate required fields
+        if not all(key in input_data for key in ['age', 'interest', 'score']):
+            return jsonify({'error': 'Invalid input. Please provide age, interest, and score.'}), 400
 
-# Recommend subject for a new student
-new_student = pd.DataFrame([[14, 0, 10]], columns=['age', 'interest_in_subject', 'previous_scores'])  # Include column names
-recommended_subject = model.predict(new_student)
+        # Create a DataFrame for the new student data
+        new_student = pd.DataFrame([[
+            input_data['age'],
+            input_data['interest'],
+            input_data['score']
+        ]], columns=['age', 'interest_in_subject', 'previous_scores'])
 
-# Output recommended subject
-print(f'Recommended Subject: {"Math" if recommended_subject == 1 else "Science"}')
+        # Predict the recommended subject
+        recommended_subject = model.predict(new_student)[0]
+
+        # Convert numeric result to a readable subject
+        subject = "Math" if recommended_subject == 1 else "Science"
+
+        # Return the result as JSON
+        return jsonify({'recommended_subject': subject}), 200
+
+    except Exception as e:
+        # Handle any server-side errors
+        return jsonify({'error': str(e)}), 500
+
+# Run the Flask app
+if __name__ == '__main__':
+    app.run(debug=True)
